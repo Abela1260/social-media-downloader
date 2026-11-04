@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Media Downloader - Analyze authorized media links.">
+    <title>Media Downloader</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="navbar">
+    <a href="#" class="brand">
+        <span class="brand-icon">M</span>
+        <span>Media<span class="purple">Downloader</span></span>
+    </a>
+
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#downloader">Downloader</a>
+        <a href="#about">About</a>
+    </nav>
+
+    <a href="#downloader" class="nav-button">Get Started</a>
+</header>
+
+<main id="home">
+
+    <section class="hero">
+        <div class="tag">
+            <span class="live-dot"></span>
+            SIMPLE MEDIA PROCESSING
+        </div>
+
+        <h1>Your Media.<br>
+            <span class="gradient-text">Your Way.</span>
+        </h1>
+
+        <p class="hero-description">
+            Paste a supported media link and check the available
+            options for content you own or are authorized to download.
+        </p>
+
+        <div class="platforms">
+            <span>YouTube</span>
+            <span>TikTok</span>
+            <span>Instagram</span>
+        </div>
+    </section>
+
+    <section class="downloader-card" id="downloader">
+
+        <div class="card-heading">
+            <div>
+                <span class="section-label">MEDIA TOOL</span>
+                <h2>Paste your video link</h2>
+                <p>Enter a supported video URL below.</p>
+            </div>
+            <div class="upload-icon">↧</div>
+        </div>
+
+        <form id="downloadForm">
+
+            <label class="url-label" for="videoUrl">VIDEO URL</label>
+
+            <div class="url-input-wrap">
+                <span class="link-icon">↗</span>
+                <input
+                    type="url"
+                    id="videoUrl"
+                    placeholder="Paste YouTube, TikTok or Instagram link..."
+                    autocomplete="url"
+                    required
+                >
+                <button type="button" id="clearButton" title="Clear link">✕</button>
+            </div>
+
+            <button type="submit" class="primary-button" id="analyzeButton">
+                Analyze Link <span>→</span>
+            </button>
+
+            <div class="result-box" id="resultBox" hidden>
+                <div class="result-heading">
+                    <span class="success-icon">✓</span>
+                    <div>
+                        <strong id="resultTitle">Link recognized</strong>
+                        <small id="resultPlatform"></small>
+                    </div>
+                </div>
+
+                <p id="resultMessage"></p>
+
+                <div class="format-section">
+                    <label>CHOOSE FORMAT</label>
+                    <div class="format-options">
+                        <button type="button" class="format-option" data-format="MP4">
+                            <span class="format-icon video-icon">▶</span>
+                            <span>
+                                <strong>MP4</strong>
+                                <small>Video</small>
+                            </span>
+                            <span class="radio-circle"></span>
+                        </button>
+
+                        <button type="button" class="format-option" data-format="MP3">
+                            <span class="format-icon audio-icon">♫</span>
+                            <span>
+                                <strong>MP3</strong>
+                                <small>Audio</small>
+                            </span>
+                            <span class="radio-circle"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <p class="integration-note" id="integrationNote"></p>
+            </div>
+
+            <div class="message" id="message" role="status"></div>
+
+        </form>
+
+        <div class="security-note">
+            <span>🔒</span>
+            Only use content you own or have permission to download.
+        </div>
+
+    </section>
+
+    <section class="features" id="about">
+        <div class="feature">
+            <span>⚡</span>
+            <h3>Easy to use</h3>
+            <p>Paste a link and analyze its source.</p>
+        </div>
+
+        <div class="feature">
+            <span>🎬</span>
+            <h3>Multiple formats</h3>
+            <p>Plan for MP4 video and MP3 audio processing.</p>
+        </div>
+
+        <div class="feature">
+            <span>📱</span>
+            <h3>Mobile friendly</h3>
+            <p>Designed for desktop, tablet and mobile.</p>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    <a href="#home" class="brand footer-brand">
+        <span class="brand-icon">M</span>
+        Media<span class="purple">Downloader</span>
+    </a>
+    <p>© 2026 Media Downloader. All rights reserved.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
