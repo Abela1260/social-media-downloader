@@ -11,6 +11,7 @@ const resultMessage = document.getElementById("resultMessage");
 const integrationNote = document.getElementById("integrationNote");
 
 let selectedFormat = null;
+let analyzedPlatform = null;
 
 function showMessage(text, error = false) {
     message.textContent = text;
@@ -22,6 +23,7 @@ function resetFormats() {
 
     document.querySelectorAll(".format-option").forEach(button => {
         button.classList.remove("selected");
+        button.disabled = false;
     });
 }
 
@@ -39,6 +41,69 @@ videoUrl.addEventListener("input", () => {
     showMessage("");
 });
 
+
+
+async function convertSample(format) {
+    const buttons = document.querySelectorAll(".format-option");
+
+    buttons.forEach(button => button.disabled = true);
+
+    integrationNote.textContent =
+        "Converting your local test-media/sample.mp4 file.";
+
+    showMessage(`Converting sample video to ${format}...`);
+
+    try {
+        const response = await fetch("/api/convert-sample", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ format })
+        });
+
+        if (!response.ok) {
+            let errorMessage = "Conversion failed.";
+
+            try {
+                const data = await response.json();
+                errorMessage = data.message || errorMessage;
+            } catch {}
+
+            throw new Error(errorMessage);
+        }
+
+        const blob = await response.blob();
+
+        if (!blob.size) {
+            throw new Error("The converted file is empty.");
+        }
+
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = `media-downloader-sample.${format.toLowerCase()}`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+
+        showMessage(`${format} download successful!`);
+
+        integrationNote.textContent =
+            `Sample video successfully converted to ${format}.`;
+
+    } catch (error) {
+        showMessage(error.message, true);
+    } finally {
+        buttons.forEach(button => button.disabled = false);
+    }
+}
+
+
 document.querySelectorAll(".format-option").forEach(button => {
     button.addEventListener("click", () => {
         selectedFormat = button.dataset.format;
@@ -49,8 +114,7 @@ document.querySelectorAll(".format-option").forEach(button => {
 
         button.classList.add("selected");
 
-        integrationNote.textContent =
-            selectedFormat + " selected. Actual downloading requires an authorized platform integration.";
+        convertSample(selectedFormat);
     });
 });
 
@@ -82,14 +146,16 @@ form.addEventListener("submit", async event => {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || "Could not analyze this link.");
+            throw new Error(data.message || "Could not analyze this link.");
         }
 
         resultTitle.textContent = data.message;
+        analyzedPlatform = data.platform;
         resultPlatform.textContent = "Source: " + data.platform;
         resultMessage.textContent = data.note;
+
         integrationNote.textContent =
-            "Select MP4 or MP3 to choose your intended output format.";
+            "Choose a format to test conversion using the local sample video.";
 
         resultBox.hidden = false;
         showMessage("Link analyzed successfully.");
