@@ -6,6 +6,8 @@ const fs = require("fs");
 const os = require("os");
 const crypto = require("crypto");
 const { spawn } = require("child_process");
+const PYTHON_PATH =
+    "C:\\Users\\aa\\AppData\\Local\\Python\\pythoncore-3.15-64\\python.exe";
 
 const app = express();
 const PORT = 3000;
@@ -410,6 +412,175 @@ app.post("/api/download-direct", async (req, res) => {
             });
         }
     }
+});
+
+app.get("/api/yt-dlp-version", (req, res) => {
+    const process = spawn(PYTHON_PATH, ["-m", "yt_dlp", "--version"]);
+
+    let output = "";
+
+    process.stdout.on("data", data => {
+        output += data.toString();
+    });
+
+    process.on("close", code => {
+        if (code === 0) {
+            res.json({
+                success: true,
+                version: output.trim()
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: "yt-dlp could not start."
+            });
+        }
+    });
+});
+
+app.post("/api/video-info", async (req, res) => {
+    const { url } = req.body || {};
+
+    if (!url) {
+        return res.status(400).json({
+            success: false,
+            message: "Please provide a video URL."
+        });
+    }
+
+    let parsedUrl;
+
+    try {
+        parsedUrl = await validatePublicUrl(url);
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+
+    const host = parsedUrl.hostname.toLowerCase();
+
+    const allowedDomains = [
+        "youtube.com",
+        "youtu.be",
+        "tiktok.com",
+        "instagram.com",
+        "instagr.am"
+    ];
+
+    const supportedPlatform = allowedDomains.some(
+        domain => host === domain || host.endsWith("." + domain)
+    );
+
+    const directMedia = /\.(mp4|webm|mov|m4v|mp3|m4a|wav|ogg)$/i
+        .test(parsedUrl.pathname);
+
+    if (!supportedPlatform && !directMedia) {
+        return res.status(400).json({
+            success: false,
+            message: "This video source is not supported."
+        });
+    }
+
+    const child = spawn(PYTHON_PATH, [
+        "-m",
+        "yt_dlp",
+        "--dump-single-json",
+        "--no-warnings",
+        "--no-playlist",
+        "--skip-download",
+        "--socket-timeout",
+        "20",
+        parsedUrl.href
+    ], { windowsHide: true });
+
+    let output = "";
+    let errorOutput = "";
+    let timedOut = false;
+    let tooLarge = false;
+
+    const timeout = setTimeout(() => {
+        timedOut = true;
+        child.kill();
+    }, 60000);
+
+    child.stdout.on("data", data => {
+        output += data.toString();
+
+        if (output.length > 5 * 1024 * 1024) {
+            tooLarge = true;
+            child.kill();
+        }
+    });
+
+    child.stderr.on("data", data => {
+        errorOutput += data.toString();
+        errorOutput = errorOutput.slice(-3000);
+    });
+
+    child.on("error", error => {
+        clearTimeout(timeout);
+
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                message: "Could not start yt-dlp."
+            });
+        }
+    });
+
+    child.on("close", code => {
+        clearTimeout(timeout);
+
+        if (timedOut || tooLarge) {
+            return res.status(504).json({
+                success: false,
+                message: timedOut
+                    ? "Video analysis timed out."
+                    : "Video information is too large."
+            });
+        }
+
+        if (code !== 0) {
+            return res.status(422).json({
+                success: false,
+                message: errorOutput.slice(-500) ||
+                    "Could not extract video information."
+            });
+        }
+
+        try {
+            const info = JSON.parse(output);
+
+            const formats = (info.formats || [])
+                .filter(format => format.vcodec !== "none")
+                .map(format => ({
+                    format_id: format.format_id,
+                    ext: format.ext,
+                    resolution: format.resolution,
+                    height: format.height,
+                    fps: format.fps
+                }))
+                .slice(0, 30);
+
+            res.json({
+                success: true,
+                title: info.title,
+                thumbnail: info.thumbnail,
+                duration: info.duration,
+                uploader: info.uploader,
+                platform: info.extractor,
+                formats
+            });
+
+        } catch {
+            res.status(500).json({
+                success: false,
+                message: "Could not read video information."
+            });
+        }
+    });
 });
 
 app.listen(PORT, () => {

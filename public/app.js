@@ -9,9 +9,17 @@ const resultTitle = document.getElementById("resultTitle");
 const resultPlatform = document.getElementById("resultPlatform");
 const resultMessage = document.getElementById("resultMessage");
 const integrationNote = document.getElementById("integrationNote");
+const videoPreview = document.getElementById("videoPreview");
+const videoThumbnail = document.getElementById("videoThumbnail");
+const videoDuration = document.getElementById("videoDuration");
+const videoUploader = document.getElementById("videoUploader");
+const qualitySection = document.getElementById("qualitySection");
+const videoQuality = document.getElementById("videoQuality");
 
 let selectedFormat = null;
 let analyzedPlatform = null;
+let analyzedUrl = null;
+let availableFormats = [];
 
 function showMessage(text, error = false) {
     message.textContent = text;
@@ -135,7 +143,7 @@ form.addEventListener("submit", async event => {
     showMessage("");
 
     try {
-        const response = await fetch("/api/analyze", {
+       const response = await fetch("/api/video-info", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -149,16 +157,57 @@ form.addEventListener("submit", async event => {
             throw new Error(data.message || "Could not analyze this link.");
         }
 
-        resultTitle.textContent = data.message;
-        analyzedPlatform = data.platform;
-        resultPlatform.textContent = "Source: " + data.platform;
-        resultMessage.textContent = data.note;
+        analyzedUrl = url;
+analyzedPlatform = data.platform;
+availableFormats = data.formats || [];
 
-        integrationNote.textContent =
-            "Choose a format to test conversion using the local sample video.";
+resultTitle.textContent = data.title || "Video found";
+resultPlatform.textContent = "Source: " + (data.platform || "Unknown");
+
+resultMessage.textContent =
+    "Video information retrieved successfully.";
+
+videoThumbnail.src = data.thumbnail || "";
+videoPreview.hidden = false;
+
+videoDuration.textContent = data.duration
+    ? "Duration: " + Math.floor(data.duration / 60) + ":" +
+      String(data.duration % 60).padStart(2, "0")
+    : "";
+
+videoUploader.textContent =
+    "Uploader: " + (data.uploader || "Unknown");
+
+videoQuality.innerHTML = "";
+
+if (availableFormats.length > 0) {
+    availableFormats.forEach((format, index) => {
+        const option = document.createElement("option");
+
+        option.value = format.format_id;
+        option.textContent =
+            format.resolution ||
+            (format.height ? format.height + "p" : format.ext);
+
+        if (index === 0) {
+            option.selected = true;
+        }
+
+        videoQuality.appendChild(option);
+    });
+
+    qualitySection.hidden = false;
+}
+
+integrationNote.textContent =
+    availableFormats.length + " video quality options found.";
 
         resultBox.hidden = false;
+        videoPreview.hidden = true;
+        qualitySection.hidden = true;
+        videoQuality.innerHTML = "";
         showMessage("Link analyzed successfully.");
+
 
     } catch (error) {
         showMessage(error.message, true);
